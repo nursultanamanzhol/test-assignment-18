@@ -7,7 +7,10 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.PUT
 
 interface ApiService {
 
@@ -26,27 +29,27 @@ interface ApiService {
     @PUT("api/v1/users/me/")
     suspend fun updateUserProfile(@Body userProfile: UserProfile)
 
-    // Добавьте другие запросы по мере необходимости
+    // Добавляем метод для обновления токена
+    @POST("api/v1/users/refresh-token/")
+    suspend fun refreshToken(@Body requestBody: Map<String, String>): AuthResponse
 }
-
 
 object RetrofitInstance {
 
     private const val BASE_URL = "https://plannerok.ru/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level =
-            HttpLoggingInterceptor.Level.BODY // Уровень логирования - BODY для полного логирования запросов и ответов
+        level = HttpLoggingInterceptor.Level.BODY
     }
 
     private val client = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor) // Добавляем логирующий интерцептор
+        .addInterceptor(loggingInterceptor)
         .build()
 
     private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(client)  // Присваиваем кастомный OkHttpClient с логированием
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

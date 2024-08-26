@@ -1,6 +1,6 @@
 package kz.jetpack.test_assigment_18_08_2024.presentation
 
-import androidx.compose.foundation.Image
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,13 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import kz.jetpack.test_assigment_18_08_2024.R
 import kz.jetpack.test_assigment_18_08_2024.auth.JwtManager
 import kz.jetpack.test_assigment_18_08_2024.network.RetrofitInstance
 import kz.jetpack.test_assigment_18_08_2024.ui.theme.background
@@ -29,19 +26,11 @@ fun AuthScreen(
     onRegistrationNeeded: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
-
     var phoneNumber by remember { mutableStateOf("+7") }
     var smsCode by remember { mutableStateOf("") }
     var showCodeInput by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
-    var img = if (!showCodeInput) {
-        painterResource(id = R.drawable.verification_svgrepo_com)
-    } else {
-        painterResource(id = R.drawable.sms_svgrepo_com)
-    }
 
     LazyColumn(
         modifier = Modifier
@@ -52,25 +41,6 @@ fun AuthScreen(
         verticalArrangement = Arrangement.Center
     ) {
         item {
-            Image(
-                painter = img,
-                contentDescription = null,
-                modifier = Modifier.size(150.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Verification",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = if (!showCodeInput) "We will send you One Time Code on your phone number"
-                else "You will get an OTP via SMS",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
             if (!showCodeInput) {
                 TextField(
                     value = phoneNumber,
@@ -123,11 +93,18 @@ fun AuthScreen(
                                     "code" to smsCode
                                 )
                                 val response = RetrofitInstance.api.checkAuthCode(requestBody)
-                                jwtManager.accessToken = response.accessToken
-                                jwtManager.refreshToken = response.refreshToken
-                                if (response.isUserExists) {
+                                jwtManager.accessToken = response.access_token
+                                jwtManager.refreshToken = response.refresh_token
+                                Log.d("ServerResponse", response.toString()) // Добавьте лог для проверки всего ответа
+                                Log.d("UserExists", response.is_user_exists.toString()) // Этот лог должен показывать 'true', если сервер возвращает 'true'
+
+                                if (response.is_user_exists) {
+                                    // Если пользователь существует, пропускаем регистрацию и переходим на экран профиля
+                                    println("User exists, proceeding to profile.")
                                     onLoginSuccess()
                                 } else {
+                                    // Если пользователя нет, переходим на экран регистрации
+                                    println("User does not exist, proceeding to registration.")
                                     onRegistrationNeeded(phoneNumber)
                                 }
                                 errorMessage = null
@@ -141,10 +118,6 @@ fun AuthScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("VERIFY")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = { /* Реализуйте логику повторной отправки */ }) {
-                    Text(text = "Resend again", color = MaterialTheme.colorScheme.primary)
                 }
             }
 
